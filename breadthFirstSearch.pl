@@ -13,25 +13,25 @@ breadthFirstSearch(Input, Solution, Statistics) :-
 	make_queue(ClosedQueue),
 	make_queue(FreshOpenQueue),
 	join_queue(Input, FreshOpenQueue, OpenQueue),
-	assert(node([], Input, 0),			% Store first node with initial input at g-level 0.
-	recurse(OpenQueue, 0).
+	assert(node([], Input, 0)),			% Store first node with initial input at g-level 0.
+	recurse(Input, OpenQueue, Solution).
 	
 % Change of tack - pass in a queue and iterate through all of them expanding each set and adding to the queue,
 % removing closed sets as you go, hah
 	
-% Base Case TODO
-recurse(StateQueue, Gvalue) :-
+% Base Case
+recurse(State, StateQueue, State) :- goal8(State).
+recurse(State, StateQueue, Solution) :-
+	expandStates(State, ExpandedStates),
+	assert(closed(State)),
+	list_join_queue(ExpandedStates, StateQueue, JoinedQueue),
 	
-	
-recurse(StateQueue, Gvalue) :-
-	
-	expandStates(StateQueue, [], ExpandedStates),
-	
-	join_queue(NeighbourStates, OpenQueue, NewOpenQueue),
+	serve_queue(JoinedQueue, NextState, NextQueue),
+	recurse(NextState, NextQueue, Solution).
 
 
 % Unpacks a set of states from their tuples into a list 
-% of only the second tuple.
+% of only the second tuple. TESTED
 unpackStates([], OutList, OutList).
 unpackStates([(_, State)|T], DelegateList, OutList) :-
 	append(DelegateList, [State], MidList),
@@ -40,24 +40,35 @@ unpackStates([(_, State)|T], DelegateList, OutList) :-
 	
 % Takes a list of states and perform a check that they can be added to the expanded
 % states list (i.e. not a repeat of the current list or already closed.), If so then
-% they are added to the output list and marked as a node
-appendState([], OutList, OutList, ParentState).
-appendState([State|T], DelegateList, OutList, ParentState) :-
-	(((not(closed(State)), not(node(_, State, _))) ->	(		% Only add a state if it isnt closed or already exisitng node
+% they are added to the output list and marked as a node TESTED
+filterState([], OutList, OutList, _).
+filterState([State|T], DelegateList, OutList, ParentState) :-
+
+	((not(closed(State)), not(node(_, State, _))) -> (			% Only add a state if it isnt closed or already exisitng node
 		node(_, ParentState, Gvalue),							% Get the g-value of the parent node
-		assert(node(ParentState, State, Gvalue))				% Register current state as an existing node
-		append(OutList, State, MidList)))),						
-	appendState(T, MidList, OutList, ParentState).
+		assert(node(ParentState, State, Gvalue + 1)),				% Register current state as an existing node
+		append(DelegateList, [State], MidList),
+		filterState(T, MidList, OutList, ParentState)))
+	;
+		filterState(T, DelegateList, OutList, ParentState).						
+	
 	
 	
 % Passed a list of state tuples and outputs a list of those tuples expanded states
 % with no repeats or closed states added, all state tuples passed in will be marked 
 % as closed.
-expandStates([], OutList, OutList).
-expandStates([State|T], DelegateList, OutList) :-
-	succ8(State, NeighbourTuples),											% Expand neighbouring states
-	assert(closed(State)),													% Close the statebecause expanded
+expandStates(State, OutList) :-
+	succ8(State, NeighbourTuples),									% Expand neighbouring states
+	unpackStates(NeighbourTuples, [], NeighbourStates),				% Unpack just the states from the tuples
+	filterState(NeighbourStates, [], OutList, State).				% take a list of states to add, the current List of expanded states and output the uptaded expanded list
+
 	
-	unpackStates(NeighbourTuples, [], NeighbourStates),						% Unpack just the states from the tuples
-	appendState(NeighbourStates, DelegateList, MidList, ParentState)		% take a list of states to add, the current List of expanded states and output the uptaded expanded list
-	expandStates(T, MidList, OutList).										% Recurse
+% Walks up the inheritance tree and creates a list of states from the goal state
+% to the root starting state. TESTED
+getSolution([], SolutionList, SolutionList).
+getSolution(LeafState, DelegateList, SolutionList) :-
+	node(ParentState, LeafState, _),
+	append([ParentState], DelegateList, NewSolutionList),
+	getSolution(ParentState, NewSolutionList, SolutionList).
+	
+	
