@@ -34,8 +34,7 @@ recurse(State, StateQueue, Solution) :-
 	assert(closed(State)),
 	appendQueue(ExpandedStates, StateQueue, JoinedQueue),
 	serve_queue(JoinedQueue, NextState, NextQueue),
-	recurse(NextState, NextQueue, Solution),
-	print(Solution).
+	recurse(NextState, NextQueue, Solution).
 
 
 % Unpacks a set of states from their tuples into a list 
@@ -54,7 +53,7 @@ filterState([State|T], DelegateList, OutList, ParentState) :-
 
 	((not(closed(State)), not(node(_, State, _))) -> (			% Only add a state if it isnt closed or already exisitng node
 		node(_, ParentState, Gvalue),							% Get the g-value of the parent node
-		assert(node(ParentState, State, Gvalue + 1)),				% Register current state as an existing node
+		assert(node(ParentState, State, Gvalue + 1)),			% Register current state as an existing node
 		append(DelegateList, [State], MidList),
 		filterState(T, MidList, OutList, ParentState)))
 	;
@@ -75,8 +74,8 @@ expandStates(State, OutList) :-
 % to the root starting state. TESTED
 getSolution([], SolutionList, SolutionList).
 getSolution(LeafState, DelegateList, SolutionList) :-
+	append([LeafState], DelegateList, NewSolutionList),
 	node(ParentState, LeafState, _),
-	append([ParentState], DelegateList, NewSolutionList),
 	getSolution(ParentState, NewSolutionList, SolutionList).
 	
 	
