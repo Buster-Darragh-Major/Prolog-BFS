@@ -5,29 +5,37 @@
 
 breadthFirstSearch(Input, Solution, Statistics) :-
 	
+	retractall(closed),
+	retractall(node),
+	
 	% Initialise counters
 	initialiseCounter(_, Generated),	% Initialise counter for all g-levels
 	initialiseCounter(_, Duplicated),	% Initialise counter for all duplicated per g-level
 	initialiseCounter(_, Expanded),		% Initialise counter for all expanded per g-level
 	
-	make_queue(ClosedQueue),
-	make_queue(FreshOpenQueue),
-	join_queue(Input, FreshOpenQueue, OpenQueue),
+	make_queue(OpenQueue),
 	assert(node([], Input, 0)),			% Store first node with initial input at g-level 0.
-	recurse(Input, OpenQueue, Solution).
+	recurse(Input, OpenQueue, EndState),
 	
-% Change of tack - pass in a queue and iterate through all of them expanding each set and adding to the queue,
-% removing closed sets as you go, hah
+	getSolution(EndState, [], Solution).
+	
+	
+% list_join_queue doesnt do what it says it should so this does.
+appendQueue([], OutQueue, OutQueue).
+appendQueue([State|T], InQueue, OutQueue) :-
+	join_queue(State, InQueue, MidQueue),
+	appendQueue(T, MidQueue, OutQueue).
+	
 	
 % Base Case
-recurse(State, StateQueue, State) :- goal8(State).
+recurse(State, _, State) :- goal8(State).
 recurse(State, StateQueue, Solution) :-
 	expandStates(State, ExpandedStates),
 	assert(closed(State)),
-	list_join_queue(ExpandedStates, StateQueue, JoinedQueue),
-	
+	appendQueue(ExpandedStates, StateQueue, JoinedQueue),
 	serve_queue(JoinedQueue, NextState, NextQueue),
-	recurse(NextState, NextQueue, Solution).
+	recurse(NextState, NextQueue, Solution),
+	print(Solution).
 
 
 % Unpacks a set of states from their tuples into a list 
