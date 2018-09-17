@@ -3,10 +3,13 @@
 :- consult(queues).
 :- use_module(library(lists)).
 
+:- dynamic closed/1.
+:- dynamic node/3.
+
 breadthFirstSearch(Input, Solution, Statistics) :-
 	
-	retractall(closed),
-	retractall(node),
+	retractall(closed(_)),
+	retractall(node(_,_,_)),
 	
 	% Initialise counters
 	initialiseCounter(_, Generated),	% Initialise counter for all g-levels
@@ -52,7 +55,8 @@ filterState([], OutList, OutList, _).
 filterState([State|T], DelegateList, OutList, ParentState) :-
 
 	((not(closed(State)), not(node(_, State, _))) -> (			% Only add a state if it isnt closed or already exisitng node
-		node(_, ParentState, Gvalue),							% Get the g-value of the parent node
+		node(_, ParentState, Gvalue),							
+		% Get the g-value of the parent node
 		assert(node(ParentState, State, Gvalue + 1)),			% Register current state as an existing node
 		append(DelegateList, [State], MidList),
 		filterState(T, MidList, OutList, ParentState)))
@@ -77,5 +81,3 @@ getSolution(LeafState, DelegateList, SolutionList) :-
 	append([LeafState], DelegateList, NewSolutionList),
 	node(ParentState, LeafState, _),
 	getSolution(ParentState, NewSolutionList, SolutionList).
-	
-	
