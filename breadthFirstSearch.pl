@@ -25,8 +25,8 @@ breadthFirstSearch(Input, Solution, Statistics) :-
 	getSolution(EndState, [], Solution),
 
 	node(_, EndState, Gvalue),
-	unpackStatistics(Gvalue),
-	wrapper(Statistics).
+	unpackStatistics(Gvalue, [], Statistics).
+	
 
 incr(X, X1) :-
 	X1 is X+1.
@@ -72,17 +72,22 @@ unpackStates([(_, State)|T], DelegateList, OutList) :-
 filterState([], OutList, OutList, _, _).
 filterState([State|T], DelegateList, OutList, ParentState, Gvalue) :-
 
-	incrementCounter(Gvalue, generated),							% Every time this enters a new generated state is being filtered
+	incr(Gvalue, IncrG),
+	
+	node(_,ParentState,StatsGvalue),
+	incr(StatsGvalue, IncrStatsG),
+	incrementCounter(IncrStatsG, generated),							% Every time this enters a new generated state is being filtered
 	
 	((not(closed(State)), not(node(_, State, _))) -> (			% Only add a state if it isnt closed or already exisitng node
-		incr(Gvalue, IncrG),
+		
 		assert(node(ParentState, State, IncrG)),				% Register current state as an existing node
 		append(DelegateList, [State], MidList),
 
 		filterState(T, MidList, OutList, ParentState, Gvalue)))
 	;
-		incr(Gvalue, IncrG),
-		incrementCounter(IncrG, duplicated),					% Every time this is called state is duplicate
+		node(_,ParentState,StatsGvalue),
+		incr(StatsGvalue, IncrStatsG),
+		incrementCounter(IncrStatsG, duplicated),					% Every time this is called state is duplicate
 		filterState(T, DelegateList, OutList, ParentState, Gvalue).						
 	
 	
@@ -105,13 +110,13 @@ getSolution(LeafState, DelegateList, SolutionList) :-
 	getSolution(ParentState, NewSolutionList, SolutionList).
 	
 
-unpackStatistics(-1).
-unpackStatistics(Gvalue) :-
+unpackStatistics(-1, Statistics, Statistics).
+unpackStatistics(Gvalue, DelegateList, Statistics) :-
 	getValueCounter(Gvalue, generated, GeneratedValue),
 	getValueCounter(Gvalue, duplicated, DuplicatedValue),
 	getValueCounter(Gvalue, expanded, ExpandedValue),
 
-	assert(wrapper(stats(Gvalue, GeneratedValue, DuplicatedValue, ExpandedValue))),
+	append([stats(Gvalue, GeneratedValue, DuplicatedValue, ExpandedValue)], DelegateList, MidList),
 	
 	decr(Gvalue, DecrG),
-	unpackStatistics(DecrG).
+	unpackStatistics(DecrG, MidList, Statistics).
