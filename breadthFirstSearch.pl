@@ -25,7 +25,7 @@ breadthFirstSearch(Input, Solution, Statistics) :-
 	getSolution(EndState, [], Solution),
 
 	node(_, EndState, Gvalue),
-	unpackStatistics(Gvalue, [], Statistics).
+	unpackStatistics(Gvalue, [], Statistics), !.
 	
 
 incr(X, X1) :-
@@ -48,7 +48,8 @@ recurse(State, _, State, _) :- goal8(State).
 recurse(State, StateQueue, Solution, Gvalue) :-
 	expandStates(State, ExpandedStates, Gvalue),
 	
-	incrementCounter(Gvalue, expanded),		% Node has been expanded.
+	decr(Gvalue, DecrG),
+	incrementCounter(DecrG, expanded),		% Node has been expanded on the PREVIOUS level.
 	assert(closed(State)),
 	
 	appendQueue(ExpandedStates, StateQueue, JoinedQueue),
@@ -82,9 +83,7 @@ filterState([State|T], DelegateList, OutList, ParentState, Gvalue) :-
 
 		filterState(T, MidList, OutList, ParentState, Gvalue)))
 	;
-		node(_,ParentState,StatsGvalue),
-		incr(StatsGvalue, IncrStatsG),
-		incrementCounter(IncrStatsG, duplicated),					% Every time this is called state is duplicate
+		incrementCounter(Gvalue, duplicated),					% Every time this is called state is duplicate
 		filterState(T, DelegateList, OutList, ParentState, Gvalue).						
 	
 	
@@ -107,7 +106,8 @@ getSolution(LeafState, DelegateList, SolutionList) :-
 	getSolution(ParentState, NewSolutionList, SolutionList).
 	
 
-unpackStatistics(-1, Statistics, Statistics).
+unpackStatistics(Gvalue, Statistics, Statistics) :-
+	Gvalue @< 0.
 unpackStatistics(Gvalue, DelegateList, Statistics) :-
 	getValueCounter(Gvalue, generated, GeneratedValue),
 	getValueCounter(Gvalue, duplicated, DuplicatedValue),
