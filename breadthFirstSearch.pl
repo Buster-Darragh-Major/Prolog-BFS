@@ -54,16 +54,17 @@ recurse(State, StateQueue, Solution, Gvalue) :-
 	appendQueue(ExpandedStates, StateQueue, JoinedQueue),
 	serve_queue(JoinedQueue, NextState, NextQueue),
 	
-	incr(Gvalue, IncrG),
-	recurse(NextState, NextQueue, Solution, IncrG).
+	node(_,NextState,NextGvalue),
+	recurse(NextState, NextQueue, Solution, NextGvalue).
 
 
 % Unpacks a set of states from their tuples into a list 
 % of only the second tuple. TESTED
-unpackStates([], OutList, OutList).
-unpackStates([(_, State)|T], DelegateList, OutList) :-
+unpackStates([], OutList, OutList, _).
+unpackStates([(_, State)|T], DelegateList, OutList, Gvalue) :-
+	incrementCounter(Gvalue, generated),
 	append(DelegateList, [State], MidList),
-	unpackStates(T, MidList, OutList).
+	unpackStates(T, MidList, OutList, Gvalue).
 	
 	
 % Takes a list of states and perform a check that they can be added to the expanded
@@ -73,10 +74,6 @@ filterState([], OutList, OutList, _, _).
 filterState([State|T], DelegateList, OutList, ParentState, Gvalue) :-
 
 	incr(Gvalue, IncrG),
-	
-	node(_,ParentState,StatsGvalue),
-	incr(StatsGvalue, IncrStatsG),
-	incrementCounter(IncrStatsG, generated),							% Every time this enters a new generated state is being filtered
 	
 	((not(closed(State)), not(node(_, State, _))) -> (			% Only add a state if it isnt closed or already exisitng node
 		
@@ -97,7 +94,7 @@ filterState([State|T], DelegateList, OutList, ParentState, Gvalue) :-
 % as closed.
 expandStates(State, OutList, Gvalue) :-
 	succ8(State, NeighbourTuples),									% Expand neighbouring states
-	unpackStates(NeighbourTuples, [], NeighbourStates),				% Unpack just the states from the tuples
+	unpackStates(NeighbourTuples, [], NeighbourStates, Gvalue),				% Unpack just the states from the tuples
 	filterState(NeighbourStates, [], OutList, State, Gvalue).		% take a list of states to add, the current List of expanded states and output the uptaded expanded list
 
 	
