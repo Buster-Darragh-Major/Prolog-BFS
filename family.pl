@@ -28,11 +28,12 @@ parentOf(x, y2).
 	
 
 inSameTree(Node1, Node2) :-
-	(ancestorOfOrSelf(X, Node1), ancestorOfOrSelf(X, Node2)).
+	getRootNode(Node1, Root1),
+	getRootNode(Node2, Root2),
+	Root1 = Root2.
 	
-
-% Helper method for finding direct ancestors
-ancestorOfOrSelf(Ancestor, Descendant) :-
-	(Ancestor = Descendant);
-	parentOf(Ancestor, Descendant);
-	(parentOf(ParentX, Descendant), ancestorOfOrSelf(Ancestor, ParentX)).
+getRootNode(RootNode, RootNode) :-
+	not(parentOf(_, RootNode)).
+getRootNode(Node, RootNode) :-
+	parentOf(NextNode, Node),
+	getRootNode(NextNode, RootNode).
